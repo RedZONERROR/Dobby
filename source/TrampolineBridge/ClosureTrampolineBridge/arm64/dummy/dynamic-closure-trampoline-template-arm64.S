@@ -11,7 +11,7 @@
     #define cdecl(s) s
 #endif
 
-#define PAGE_MAX_SIZE 4096
+#define PAGE_MAX_SIZE 16384
 #define PAGE_MAX_SHIFT 14
 
 .align PAGE_MAX_SHIFT

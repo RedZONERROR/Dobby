@@ -122,8 +122,10 @@ UniconEmulator::UniconEmulator(const std::string &arch) {
 
 void UniconEmulator::mapMemory(uintptr_t addr, char *buffer, size_t buffer_size) {
   uc_err err = UC_ERR_OK;
-  uintptr_t map_addr = ALIGN_FLOOR(addr, 0x1000);
-  size_t map_size = ALIGN_CEIL(buffer_size, 0x1000);
+  // Use dynamic page size for 16KB support
+  size_t page_size = sysconf(_SC_PAGESIZE);
+  uintptr_t map_addr = ALIGN_FLOOR(addr, page_size);
+  size_t map_size = ALIGN_CEIL(buffer_size, page_size);
   err = uc_mem_map(uc_, map_addr, map_size, UC_PROT_ALL);
   assert(err == UC_ERR_OK);
   err = uc_mem_write(uc_, addr, buffer, buffer_size);
@@ -183,7 +185,9 @@ void check_insn_relo(char *buffer, size_t buffer_size, bool check_fault_addr, in
   //  printf("\n");
 
   auto origin = new CodeMemBlock(orig_addr, buffer_size);
-  auto relocated = new CodeMemBlock(relocate_addr, 0x1000);
+  // Use dynamic page size instead of hardcoded 4KB
+  size_t page_size = sysconf(_SC_PAGESIZE);
+  auto relocated = new CodeMemBlock(relocate_addr, page_size);
   if (g_arch == "thumb") {
     origin->reset(origin->addr + 1, origin->size);
   }

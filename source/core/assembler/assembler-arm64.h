@@ -548,9 +548,11 @@ public:
   }
 
   void AdrpAdd(Register rd, uint64_t from, uint64_t to) {
-    uint64_t from_PAGE = ALIGN(from, 0x1000);
-    uint64_t to_PAGE = ALIGN(to, 0x1000);
-    uint64_t to_PAGEOFF = (uint64_t)to % 0x1000;
+    // Use dynamic page size for 16KB support
+    uint64_t page_size = DYNAMIC_PAGE_SIZE();
+    uint64_t from_PAGE = ALIGN(from, page_size);
+    uint64_t to_PAGE = ALIGN(to, page_size);
+    uint64_t to_PAGEOFF = (uint64_t)to % page_size;
 
     adrp(rd, to_PAGE - from_PAGE);
     add(rd, rd, to_PAGEOFF);

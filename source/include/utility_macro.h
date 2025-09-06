@@ -17,6 +17,22 @@
 #define ALIGN_FLOOR(address, range) ((uintptr_t)address & ~((uintptr_t)range - 1))
 #define ALIGN_CEIL(address, range) (((uintptr_t)address + (uintptr_t)range - 1) & ~((uintptr_t)range - 1))
 
+// 16KB Page Size Support - Dynamic page size alignment
+#ifndef FLEXIBLE_PAGE_SIZE_SUPPORT
+#define FLEXIBLE_PAGE_SIZE_SUPPORT 1
+#endif
+
+#if FLEXIBLE_PAGE_SIZE_SUPPORT
+#include <unistd.h>
+#define DYNAMIC_PAGE_SIZE() (sysconf(_SC_PAGESIZE))
+#define ALIGN_PAGE_FLOOR(address) ALIGN_FLOOR(address, DYNAMIC_PAGE_SIZE())
+#define ALIGN_PAGE_CEIL(address) ALIGN_CEIL(address, DYNAMIC_PAGE_SIZE())
+#else
+#define DYNAMIC_PAGE_SIZE() 4096
+#define ALIGN_PAGE_FLOOR(address) ALIGN_FLOOR(address, 4096)
+#define ALIGN_PAGE_CEIL(address) ALIGN_CEIL(address, 4096)
+#endif
+
 // borrow from gdb, refer: binutils-gdb/gdb/arch/arm.h
 #define submask(x) ((1L << ((x) + 1)) - 1)
 #define bits(obj, st, fn) (((obj) >> (st)) & submask((fn) - (st)))

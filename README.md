@@ -1,26 +1,42 @@
-## Dobby
+# Dobby
 
-[![Contact me Telegram](https://img.shields.io/badge/Contact%20me-Telegram-blue.svg)](https://t.me/IOFramebuffer) [![Join group Telegram](https://img.shields.io/badge/Join%20group-Telegram-brightgreen.svg)](https://t.me/dobby_group)
+A lightweight hooking framework for runtime code manipulation.
 
-Dobby a lightweight, multi-platform, multi-architecture exploit hook framework.
+## Features
 
-- Minimal and modular library
-- Multi-platform support(Windows/macOS/iOS/Android/Linux)
-- Multiple architecture support(X86, X86-64, ARM, ARM64)
+- Multi-platform support (Android, iOS, macOS, Linux)
+- Multi-architecture (ARM64, ARM32, x86, x86_64)
+- 16KB page size optimization for Android 15+
+- Function hooking and code patching
+- Symbol resolution
 
-## Compile
+## Usage
 
-[docs/compile.md](docs/compile.md)
+```cpp
+#include "dobby.h"
 
-## Download
+// Hook a function
+void* target = dlsym(RTLD_DEFAULT, "target_function");
+DobbyHook(target, (void*)hook_function, (void**)&original_function);
 
-[download latest library](https://github.com/jmpews/Dobby/releases/tag/latest)
+// Patch code
+uint8_t patch[] = {0x90, 0x90}; // NOP
+DobbyCodePatch(patch_addr, patch, sizeof(patch));
+```
+
+## Build
+
+```bash
+cmake -B build
+cmake --build build
+```
 
 ## Credits
 
-1. [frida-gum](https://github.com/frida/frida-gum)
-2. [minhook](https://github.com/TsudaKageyu/minhook)
-3. [substrate](https://github.com/jevinskie/substrate).
-4. [v8](https://github.com/v8/v8)
-5. [dart](https://github.com/dart-lang/sdk)
-6. [vixl](https://git.linaro.org/arm/vixl.git)
+Based on the original Dobby framework with contributions from:
+- [frida-gum](https://github.com/frida/frida-gum)
+- [minhook](https://github.com/TsudaKageyu/minhook)
+- [substrate](https://github.com/jevinskie/substrate)
+- [v8](https://github.com/v8/v8)
+- [dart](https://github.com/dart-lang/sdk)
+- [vixl](https://git.linaro.org/arm/vixl.git)

@@ -123,8 +123,8 @@ MemBlock *NearMemoryAllocator::allocateNearBlockFromUnusedRegion(uint32_t size, 
     if (unused_mem_end < min_valid_addr || unused_mem_start > max_valid_addr)
       return 0;
 
-    // align
-    unused_mem_start = ALIGN_FLOOR(unused_mem_start, 4);
+    // align to optimal boundary for 16KB pages
+    unused_mem_start = ALIGN_FLOOR(unused_mem_start, 16);
 
     unused_mem_start = max(unused_mem_start, min_valid_addr);
     unused_mem_end = min(unused_mem_end, max_valid_addr);
@@ -153,9 +153,11 @@ MemBlock *NearMemoryAllocator::allocateNearBlockFromUnusedRegion(uint32_t size, 
   if (!unused_mem)
     return nullptr;
 
-  auto unused_arena_first_page_addr = (addr_t)ALIGN_FLOOR(unused_mem, OSMemory::PageSize());
-  auto unused_arena_end_page_addr = ALIGN_FLOOR(unused_mem + size, OSMemory::PageSize());
-  auto unused_arena_size = unused_arena_end_page_addr - unused_arena_first_page_addr + OSMemory::PageSize();
+  // Optimize for 16KB page alignment
+  uint32_t page_size = OSMemory::PageSize();
+  auto unused_arena_first_page_addr = (addr_t)ALIGN_FLOOR(unused_mem, page_size);
+  auto unused_arena_end_page_addr = ALIGN_FLOOR(unused_mem + size, page_size);
+  auto unused_arena_size = unused_arena_end_page_addr - unused_arena_first_page_addr + page_size;
   auto unused_arena_addr = unused_arena_first_page_addr;
 
   if (OSMemory::Allocate(unused_arena_size, kNoAccess, (void *)unused_arena_addr) == nullptr) {

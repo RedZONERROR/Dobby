@@ -22,29 +22,37 @@ MemoryAllocator *MemoryAllocator::SharedAllocator() {
 }
 
 CodeMemoryArena *MemoryAllocator::allocateCodeMemoryArena(uint32_t size) {
-  CHECK_EQ(size % OSMemory::PageSize(), 0);
-  uint32_t arena_size = size;
-  auto arena_addr = OSMemory::Allocate(arena_size, kNoAccess);
-  OSMemory::SetPermission(arena_addr, arena_size, kReadExecute);
+  // Ensure 16KB page alignment for optimal performance
+  uint32_t page_size = OSMemory::PageSize();
+  uint32_t aligned_size = ALIGN_CEIL(size, page_size);
+  CHECK_EQ(aligned_size % page_size, 0);
+  
+  auto arena_addr = OSMemory::Allocate(aligned_size, kNoAccess);
+  OSMemory::SetPermission(arena_addr, aligned_size, kReadExecute);
 
-  auto result = new CodeMemoryArena((addr_t)arena_addr, (size_t)arena_size);
+  auto result = new CodeMemoryArena((addr_t)arena_addr, (size_t)aligned_size);
   code_arenas.push_back(result);
   return result;
 }
 
 CodeMemBlock *MemoryAllocator::allocateExecBlock(uint32_t size) {
   CodeMemBlock *block = nullptr;
+  
+  // Align size to 16-byte boundary for better performance on 16KB pages
+  uint32_t aligned_size = ALIGN_CEIL(size, 16);
+  
   for (auto iter = code_arenas.begin(); iter != code_arenas.end(); iter++) {
     auto arena = static_cast<CodeMemoryArena *>(*iter);
-    block = arena->allocMemBlock(size);
+    block = arena->allocMemBlock(aligned_size);
     if (block)
       break;
   }
   if (!block) {
-    // allocate new arena
-    auto arena_size = ALIGN_CEIL(size, OSMemory::PageSize());
+    // allocate new arena with optimal size for 16KB pages
+    uint32_t page_size = OSMemory::PageSize();
+    uint32_t arena_size = ALIGN_CEIL(max(aligned_size, page_size * 4), page_size);
     auto arena = allocateCodeMemoryArena(arena_size);
-    block = arena->allocMemBlock(size);
+    block = arena->allocMemBlock(aligned_size);
     CHECK_NOT_NULL(block);
   }
 
@@ -66,7 +74,9 @@ uint8_t *MemoryAllocator::allocateExecMemory(uint8_t *buffer, uint32_t buffer_si
 DataMemoryArena *MemoryAllocator::allocateDataMemoryArena(uint32_t size) {
   DataMemoryArena *result = nullptr;
 
-  uint32_t buffer_size = ALIGN_CEIL(size, OSMemory::PageSize());
+  // Ensure proper alignment for 16KB pages
+  uint32_t page_size = OSMemory::PageSize();
+  uint32_t buffer_size = ALIGN_CEIL(size, page_size);
   void *buffer = OSMemory::Allocate(buffer_size, kNoAccess);
   OSMemory::SetPermission(buffer, buffer_size, kReadWrite);
 

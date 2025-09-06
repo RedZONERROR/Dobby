@@ -42,6 +42,8 @@
 #define abs(a) ((a) < 0 ? -(a) : (a))
 #endif
 #else
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#define max(a, b) (((a) > (b)) ? (a) : (b))
 #ifdef __cplusplus
 #include <type_traits>
 #include <vector>

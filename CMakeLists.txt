@@ -51,6 +51,13 @@ if (DOBBY_DEBUG)
   message(STATUS "[Dobby] Enable debug logging")
 endif ()
 
+# Enable 16KB page size support for Android 15+
+if (SYSTEM.Android)
+  add_definitions(-DFLEXIBLE_PAGE_SIZE_SUPPORT=1)
+  add_definitions(-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON)
+  message(STATUS "[Dobby] Enable 16KB page size support for Android 15+")
+endif ()
+
 # Enable full floating point register pack
 # for arm64, allow access q8 - q31
 if (FullFloatingPointRegisterPack)
@@ -68,6 +75,13 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
 endif ()
 
 include(cmake/compiler_and_linker.cmake)
+
+# Add 16KB page size linker flags for Android
+if (SYSTEM.Android)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--max-page-size=16384")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--max-page-size=16384")
+  message(STATUS "[Dobby] Added 16KB page size linker flags")
+endif ()
 
 # ---
 

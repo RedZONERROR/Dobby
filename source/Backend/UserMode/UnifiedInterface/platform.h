@@ -107,3 +107,7 @@ public:
 };
 
 #endif
+// 16KB Page Size Support 
+#ifndef FLEXIBLE_PAGE_SIZE_SUPPORT 
+#define FLEXIBLE_PAGE_SIZE_SUPPORT 1 
+#endif 

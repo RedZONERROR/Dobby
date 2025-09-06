@@ -15,6 +15,11 @@
 #include <sys/types.h>
 #endif
 
+#if defined(__ANDROID__)
+#define ANDROID_LOG_TAG "Dobby"
+#include <android/log.h>
+#endif
+
 #if defined(__APPLE__)
 #include <dlfcn.h>
 #endif
@@ -24,11 +29,6 @@
 #else
 #define PUBLIC __attribute__((visibility("default")))
 #define INTERNAL __attribute__((visibility("internal")))
-#endif
-
-#if defined(__ANDROID__)
-#define ANDROID_LOG_TAG "Dobby"
-#include <android/log.h>
 #endif
 
 static int g_log_level = 1;
