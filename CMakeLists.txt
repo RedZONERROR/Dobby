@@ -78,8 +78,8 @@ include(cmake/compiler_and_linker.cmake)
 
 # Add 16KB page size linker flags for Android
 if (SYSTEM.Android)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--max-page-size=16384")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--max-page-size=16384")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
   message(STATUS "[Dobby] Added 16KB page size linker flags")
 endif ()
 
