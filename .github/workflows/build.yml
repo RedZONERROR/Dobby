@@ -1,0 +1,121 @@
+name: Build Android Libraries
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build zip
+
+      - name: Build Dobby
+        run: |
+          mkdir -p output/static
+          mkdir -p output/shared
+          cp include/dobby.h output/dobby.h
+          
+          # List of target ABIs
+          ARCHS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
+          
+          # Locate NDK (Pre-installed on GitHub Actions virtual environments)
+          NDK_PATH=$ANDROID_NDK_HOME
+          echo "Using Android NDK: $NDK_PATH"
+          
+          for ARCH in "${ARCHS[@]}"; do
+            echo "========================================="
+            echo "Building for $ARCH..."
+            echo "========================================="
+            
+            BUILD_DIR="build_$ARCH"
+            mkdir -p $BUILD_DIR
+            mkdir -p "output/static/$ARCH"
+            mkdir -p "output/shared/$ARCH"
+            
+            # Set specific API level and 16KB flags for ARM64 (Android 15+)
+            if [ "$ARCH" == "arm64-v8a" ]; then
+              API_LEVEL=35
+              PAGE_SIZE_FLAGS="-DFLEXIBLE_PAGE_SIZE_SUPPORT=1 -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+            else
+              API_LEVEL=21
+              PAGE_SIZE_FLAGS=""
+            fi
+            
+            # Run CMake configure
+            cmake \
+              -S. \
+              -B$BUILD_DIR \
+              -G "Ninja" \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DDOBBY_DEBUG=OFF \
+              -DNearBranch=ON \
+              -DPlugin.SymbolResolver=ON \
+              -DPlugin.ImportTableReplace=OFF \
+              -DBUILD_EXAMPLE=OFF \
+              -DBUILD_TEST=OFF \
+              -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
+              -DANDROID_ABI=$ARCH \
+              -DANDROID_PLATFORM=android-$API_LEVEL \
+              -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+              -DCMAKE_C_FLAGS="-fPIC -O3 $PAGE_SIZE_FLAGS -DNDEBUG" \
+              -DCMAKE_CXX_FLAGS="-fPIC -O3 $PAGE_SIZE_FLAGS -fno-rtti -DNDEBUG" \
+              -DCMAKE_EXE_LINKER_FLAGS="-Wl,--gc-sections" \
+              -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--gc-sections"
+              
+            # Build targets: dobby (shared) and dobby_static (static)
+            cmake --build $BUILD_DIR --target dobby --config Release
+            cmake --build $BUILD_DIR --target dobby_static --config Release
+            
+            # Copy output static library
+            if [ -f "$BUILD_DIR/libdobby.a" ]; then
+              cp "$BUILD_DIR/libdobby.a" "output/static/$ARCH/libdobby.a"
+              echo "Copied static library for $ARCH"
+            else
+              echo "Static library NOT found for $ARCH"
+              exit 1
+            fi
+            
+            # Copy output shared library
+            if [ -f "$BUILD_DIR/libdobby.so" ]; then
+              cp "$BUILD_DIR/libdobby.so" "output/shared/$ARCH/libdobby.so"
+              echo "Copied shared library for $ARCH"
+            else
+              echo "Shared library NOT found for $ARCH"
+              exit 1
+            fi
+          done
+
+      - name: Package Output Folder
+        run: |
+          zip -r dobby-android-libs.zip output/
+
+      - name: Upload Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dobby-android-libs
+          path: dobby-android-libs.zip
+
+      - name: Create Release and Upload Asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dobby-android-libs.zip
+            output/dobby.h
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -12,7 +12,7 @@ REM Configuration - Update these paths if needed
 set ANDROID_NDK_PATH=C:\AndroidSDK\ndk\29.0.13846066
 set CMAKE_EXE=C:\AndroidSDK\cmake\3.22.1\bin\cmake.exe
 set NINJA_EXE=C:\AndroidSDK\cmake\3.22.1\bin\ninja.exe
-set DOBBY_SOURCE_DIR=Dobby_latest
+set DOBBY_SOURCE_DIR=.
 set BUILD_BASE_DIR=build_16kb
 set OUTPUT_DIR=dobby_16kb_libs
 
