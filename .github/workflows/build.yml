@@ -40,8 +40,10 @@ jobs:
             echo "Building for $ARCH..."
             echo "========================================="
             
-            BUILD_DIR="build_$ARCH"
-            mkdir -p $BUILD_DIR
+            BUILD_DIR_SHARED="build_${ARCH}_shared"
+            BUILD_DIR_STATIC="build_${ARCH}_static"
+            mkdir -p $BUILD_DIR_SHARED
+            mkdir -p $BUILD_DIR_STATIC
             mkdir -p "output/static/$ARCH"
             mkdir -p "output/shared/$ARCH"
             
@@ -60,12 +62,13 @@ jobs:
               NEAR_BRANCH_FLAG="-DNearBranch=ON"
             fi
             
-            # Run CMake configure
+            # 1. Build SHARED Library
             cmake \
               -S. \
-              -B$BUILD_DIR \
+              -B$BUILD_DIR_SHARED \
               -G "Ninja" \
               -DCMAKE_BUILD_TYPE=Release \
+              -DDOBBY_GENERATE_SHARED=ON \
               -DDOBBY_DEBUG=OFF \
               $NEAR_BRANCH_FLAG \
               -DPlugin.SymbolResolver=ON \
@@ -81,13 +84,35 @@ jobs:
               -DCMAKE_EXE_LINKER_FLAGS="-Wl,--gc-sections" \
               -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--gc-sections"
               
-            # Build targets: dobby (shared) and dobby_static (static)
-            cmake --build $BUILD_DIR --target dobby --config Release
-            cmake --build $BUILD_DIR --target dobby_static --config Release
+            cmake --build $BUILD_DIR_SHARED --target dobby --config Release
+
+            # 2. Build STATIC Library
+            cmake \
+              -S. \
+              -B$BUILD_DIR_STATIC \
+              -G "Ninja" \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DDOBBY_GENERATE_SHARED=OFF \
+              -DDOBBY_DEBUG=OFF \
+              $NEAR_BRANCH_FLAG \
+              -DPlugin.SymbolResolver=ON \
+              -DPlugin.ImportTableReplace=OFF \
+              -DBUILD_EXAMPLE=OFF \
+              -DBUILD_TEST=OFF \
+              -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
+              -DANDROID_ABI=$ARCH \
+              -DANDROID_PLATFORM=android-$API_LEVEL \
+              -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+              -DCMAKE_C_FLAGS="-fPIC -O3 $PAGE_SIZE_FLAGS -DNDEBUG" \
+              -DCMAKE_CXX_FLAGS="-fPIC -O3 $PAGE_SIZE_FLAGS -fno-rtti -DNDEBUG" \
+              -DCMAKE_EXE_LINKER_FLAGS="-Wl,--gc-sections" \
+              -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--gc-sections"
+              
+            cmake --build $BUILD_DIR_STATIC --target dobby --config Release
             
             # Copy output static library
-            if [ -f "$BUILD_DIR/libdobby.a" ]; then
-              cp "$BUILD_DIR/libdobby.a" "output/static/$ARCH/libdobby.a"
+            if [ -f "$BUILD_DIR_STATIC/libdobby.a" ]; then
+              cp "$BUILD_DIR_STATIC/libdobby.a" "output/static/$ARCH/libdobby.a"
               echo "Copied static library for $ARCH"
             else
               echo "Static library NOT found for $ARCH"
@@ -95,8 +120,8 @@ jobs:
             fi
             
             # Copy output shared library
-            if [ -f "$BUILD_DIR/libdobby.so" ]; then
-              cp "$BUILD_DIR/libdobby.so" "output/shared/$ARCH/libdobby.so"
+            if [ -f "$BUILD_DIR_SHARED/libdobby.so" ]; then
+              cp "$BUILD_DIR_SHARED/libdobby.so" "output/shared/$ARCH/libdobby.so"
               echo "Copied shared library for $ARCH"
             else
               echo "Shared library NOT found for $ARCH"
