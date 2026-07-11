@@ -49,9 +49,15 @@ jobs:
             if [ "$ARCH" == "arm64-v8a" ]; then
               API_LEVEL=35
               PAGE_SIZE_FLAGS="-DFLEXIBLE_PAGE_SIZE_SUPPORT=1 -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+              NEAR_BRANCH_FLAG="-DNearBranch=ON"
+            elif [ "$ARCH" == "armeabi-v7a" ]; then
+              API_LEVEL=21
+              PAGE_SIZE_FLAGS=""
+              NEAR_BRANCH_FLAG="-DNearBranch=OFF"
             else
               API_LEVEL=21
               PAGE_SIZE_FLAGS=""
+              NEAR_BRANCH_FLAG="-DNearBranch=ON"
             fi
             
             # Run CMake configure
@@ -61,7 +67,7 @@ jobs:
               -G "Ninja" \
               -DCMAKE_BUILD_TYPE=Release \
               -DDOBBY_DEBUG=OFF \
-              -DNearBranch=ON \
+              $NEAR_BRANCH_FLAG \
               -DPlugin.SymbolResolver=ON \
               -DPlugin.ImportTableReplace=OFF \
               -DBUILD_EXAMPLE=OFF \
